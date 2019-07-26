@@ -1,0 +1,127 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import glob as glob\n",
+    "import networkx as nx"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Preprocessing for Daily Transaction Data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "one_day_files=glob.glob('E:/20170101T000000_20170102T000000/*.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "top = pd.read_csv('E:/top100.csv')\n",
+    "top.tail(5)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dflist= [pd.read_csv(f) for f in one_day_files]\n",
+    "data=pd.concat(dflist)\n",
+    "\n",
+    "df = data.drop(columns=['txid','blockHeight'])\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# drop the inactive addresses with corresponding transactions\n",
+    "def drop_inactive(df):\n",
+    "    df_in_filtered = df.loc[df['InAddress'].isin(top['Address'].tolist())]\n",
+    "    df_out_filtered = df_in_filtered.loc[df_in_filtered['outAddress'].isin(top['Address'].tolist())]\n",
+    "            \n",
+    "    return df_out_filtered"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Add back the inactive addresses without transactions for visualization purpose\n",
+    "def add_nodes(df_filtered):\n",
+    "    G=nx.from_pandas_edgelist(df_filtered,'outAddress', 'InAddress', 'amount')\n",
+    "    add_nodes = list(set(top['Address']) - set(list(G.node)))\n",
+    "    edge_add_list = [(node,'NaN') for node in node_add_list]\n",
+    "    G.add_edges_from(edge_add_list)\n",
+    "    if nx.number_of_nodes(G) = 101:\n",
+    "        return G\n",
+    "    else:\n",
+    "        return 'the node number is not correct’"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "G=add_nodes(df_out_filtered)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "edgelist = nx.to_pandas_edgelist(G, source='outAddress', target='InAddress', nodelist=None, dtype=None, order=None)\n",
+    "edgelist.to_csv('E:/top100_day1_nodes_added.csv',index = False)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python",
+   "language": "python",
+   "name": "conda-env-python-py"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
